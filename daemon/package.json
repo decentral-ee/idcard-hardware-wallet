@@ -1,0 +1,17 @@
+{
+  "name": "idcard-hardware-wallet-daemon",
+  "version": "0.0.1",
+  "description": "IDCard hardware wallet daemon",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Miao ZhiCheng <miao@decentral.ee>",
+  "license": "ISC",
+  "dependencies": {
+    "pkcs11js": "^1.0.17",
+    "readline-sync": "^1.4.9",
+    "truffle-privatekey-provider": "^1.1.0",
+    "web3": "^1.0.0-beta.52"
+  }
+}
