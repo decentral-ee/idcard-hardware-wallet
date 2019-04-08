@@ -9,6 +9,7 @@
   "author": "Miao ZhiCheng <miao@decentral.ee>",
   "license": "ISC",
   "dependencies": {
+    "dotenv": "^7.0.0",
     "pkcs11js": "^1.0.17",
     "readline-sync": "^1.4.9",
     "truffle-privatekey-provider": "^1.1.0",

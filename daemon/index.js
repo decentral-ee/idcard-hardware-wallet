@@ -1,3 +1,4 @@
+require('dotenv').config();
 const readlineSync = require('readline-sync');
 const pkcs11js = require('pkcs11js');
 const crypto = require('crypto');
@@ -7,14 +8,11 @@ const Web3 = require('web3');
 //const ACCOUNT0_PUBLIC_KEY = Buffer.from('046104E99F8F25F1AFD4BD18AAF4CD2B1770586640636E14707477825662E6FAD5CB0C8E27C5B19A9E718C0503B9CE90005102082B2E148BBEF53B7C88AF3CD75EE667BD502A8FB2BF3F40F919F60E2672B3C8CED895070285079C9A20961F44F10A77', 'hex');
 const ACCOUNT0_PUBLIC_KEY = Buffer.from('04E99F8F25F1AFD4BD18AAF4CD2B1770586640636E14707477825662E6FAD5CB0C8E27C5B19A9E718C0503B9CE90005102082B2E148BBEF53B7C88AF3CD75EE667BD502A8FB2BF3F40F919F60E2672B3C8CED895070285079C9A20961F44F10A77', 'hex', 'hex');
 
-let pkcs11;
-let address;
-let web3;
-
-async function init() {
+async function runWeb3(fn) {
     // init pkcs11
-    pkcs11 = new pkcs11js.PKCS11();
-    pkcs11.load('/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so');
+    let provider;
+    const pkcs11 = new pkcs11js.PKCS11();
+    pkcs11.load(process.env.PKCS11_LIB_PATH);
     pkcs11.C_Initialize();
      
     try {
@@ -40,7 +38,7 @@ async function init() {
 
         // login
         console.log('Unlocking wallet...');
-        const pin = readlineSync.question('PIN1 pin : ', { hideEchoBack: true, mask: '' });
+        const pin = readlineSync.question('PIN1 pin: ', { hideEchoBack: true, mask: '' });
         pkcs11.C_Login(session, pkcs11js.CKU_USER, pin);
 
         // get public key
@@ -107,32 +105,64 @@ async function init() {
         console.log('Wallet unlocked.');
 
         // web3
-        const provider = new PrivateKeyProvider(privateKey, 'https://kovan.infura.io/v3/052ac227a2994b69aaf6f5914b4e35c5');
-        address = provider.address;
-        web3 = new Web3(provider);
-        console.log("Ethereum address: ", address);
+        provider = new PrivateKeyProvider(privateKey, process.env.WEB3_PROVIDER);
+        const web3 = new Web3(provider);
+        const address = provider.address;
+        await fn(web3, address);
 
         pkcs11.C_Logout(session);
         pkcs11.C_CloseSession(session);
-    }
-    catch(e){
+    } catch(e){
         console.error(e);
+    } finally {
+        if (provider) provider.engine.stop();
+        pkcs11.C_Finalize();
     }
 }
 
-function uninit() {
-    pkcs11.C_Finalize();
+async function cmdInfo(web3, address) {
+    console.log('Ethereum address: ', address);
+    console.log('Ethereum balance: ', Number(web3.utils.fromWei(await web3.eth.getBalance(address), 'ether')).toFixed(4));
 }
 
-async function test() {
-    console.log("Ethereum balance: ", Number(web3.utils.fromWei(await web3.eth.getBalance(address), "ether")).toFixed(4));
+async function cmdSend(web3, address) {
+    const to = readlineSync.question('Send to: ');
+    if (!web3.utils.isAddress(to)) {
+        console.warn('Not a valid address');
+        return;
+    }
+    const amountETH = readlineSync.question('Amount: ');
+    const amount = web3.utils.toWei(amountETH, 'ether');
+    await web3.eth.sendTransaction({
+        from: address,
+        to: to,
+        value: amount
+    });
+    console.log('Sent.');
 }
 
-(async function() {
-try {
-    await init();
-    await test();
-} finally {
-    uninit();
+// CLI
+async function cmdLoop() {
+    let quit = false;
+    while (!quit) {
+        const commands = ['info', 'send', 'quit'];
+        const index = readlineSync.keyInSelect(commands, 'Which command: ');
+        const command = commands[index];
+        switch (command) {
+        case 'info':
+            await runWeb3(cmdInfo);
+            break;
+        case 'send':
+            await runWeb3(cmdSend);
+            break;
+        case 'quit':
+            quit = true;
+            break;
+        }
+    }
 }
-})();
+
+async function serverLoop() {
+}
+
+cmdLoop();
