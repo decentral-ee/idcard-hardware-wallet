@@ -100,7 +100,7 @@ async function runWeb3(fn) {
             ]
         );
         const privateKey = crypto.createHash('sha256')
-               .update(pkcs11.C_GetAttributeValue(session, hPublicKey, [{ type: pkcs11js.CKA_VALUE }])[0].value)
+               .update(pkcs11.C_GetAttributeValue(session, dk1, [{ type: pkcs11js.CKA_VALUE }])[0].value)
                .digest();
         console.log('Wallet unlocked.');
 
