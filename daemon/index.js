@@ -19,7 +19,7 @@ async function runWeb3(fn) {
         // Getting info about PKCS11 Module
         //const module_info = pkcs11.C_GetInfo();
 
-        // find PIN2 ID card slot
+        // find PIN1 ID card slot
         const slots = pkcs11.C_GetSlotList(true);
         let selectedSlot;
         slots.forEach(slot => {
@@ -38,7 +38,7 @@ async function runWeb3(fn) {
 
         // login
         console.log('Unlocking wallet...');
-        const pin = readlineSync.question('PIN1 pin: ', { hideEchoBack: true, mask: '' });
+        const pin = readlineSync.question('PIN1 pin: ', { hideEchoBack: true, mask: '*' });
         pkcs11.C_Login(session, pkcs11js.CKU_USER, pin);
 
         // get public key
