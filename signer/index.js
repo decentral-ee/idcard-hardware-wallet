@@ -4,9 +4,8 @@ const pkcs11js = require('pkcs11js');
 const crypto = require('crypto');
 const PrivateKeyProvider = require('truffle-privatekey-provider');
 const Web3 = require('web3');
+const Web3Utils = require('web3-utils');
 
-//const ACCOUNT0_PUBLIC_KEY = Buffer.from('046104E99F8F25F1AFD4BD18AAF4CD2B1770586640636E14707477825662E6FAD5CB0C8E27C5B19A9E718C0503B9CE90005102082B2E148BBEF53B7C88AF3CD75EE667BD502A8FB2BF3F40F919F60E2672B3C8CED895070285079C9A20961F44F10A77', 'hex');
-const ACCOUNT0_PUBLIC_KEY = Buffer.from('04E99F8F25F1AFD4BD18AAF4CD2B1770586640636E14707477825662E6FAD5CB0C8E27C5B19A9E718C0503B9CE90005102082B2E148BBEF53B7C88AF3CD75EE667BD502A8FB2BF3F40F919F60E2672B3C8CED895070285079C9A20961F44F10A77', 'hex', 'hex');
 
 async function runWeb3(fn) {
     // init pkcs11
@@ -36,16 +35,16 @@ async function runWeb3(fn) {
         // create session
         const session = pkcs11.C_OpenSession(selectedSlot, pkcs11js.CKF_RW_SESSION | pkcs11js.CKF_SERIAL_SESSION);
 
-        // login
-        console.log('Unlocking wallet...');
-        const pin = readlineSync.question('PIN1 pin: ', { hideEchoBack: true, mask: '*' });
-        pkcs11.C_Login(session, pkcs11js.CKU_USER, pin);
-
         // get public key
         pkcs11.C_FindObjectsInit(session, [{ type: pkcs11js.CKA_CLASS, value: pkcs11js.CKO_PUBLIC_KEY }]);
         const hPublicKey = pkcs11.C_FindObjects(session);
         if (!hPublicKey) throw new Error('Public key not found');
         pkcs11.C_FindObjectsFinal(session);
+        const publicKeyValue = pkcs11.C_GetAttributeValue(session, hPublicKey, [{ type: pkcs11js.CKA_VALUE }])[0].value.slice(2);
+
+        // login
+        const pin = readlineSync.question('PIN1 pin: ', { hideEchoBack: true, mask: '' });
+        pkcs11.C_Login(session, pkcs11js.CKU_USER, pin);
 
         // initialize account0 parameters
         /*console.log('publicKey attrs ', pkcs11.C_GetAttributeValue(session, hPublicKey, [
@@ -82,7 +81,7 @@ async function runWeb3(fn) {
                 parameter: {
                     type: pkcs11js.CK_PARAMS_EC_DH,
                     kdf: pkcs11js.CKD_NULL,
-                    publicData: ACCOUNT0_PUBLIC_KEY
+                    publicData: publicKeyValue
                 },
             },
             hPrivateKey,
@@ -102,7 +101,6 @@ async function runWeb3(fn) {
         const privateKey = crypto.createHash('sha256')
                .update(pkcs11.C_GetAttributeValue(session, dk1, [{ type: pkcs11js.CKA_VALUE }])[0].value)
                .digest();
-        console.log('Wallet unlocked.');
 
         // web3
         provider = new PrivateKeyProvider(privateKey, process.env.WEB3_PROVIDER);
@@ -163,6 +161,68 @@ async function cmdLoop() {
 }
 
 async function serverLoop() {
+    const express = require('express');
+    const bodyParser = require('body-parser');
+    const cors = require('cors');
+    const app = express();
+    const port = 8301;
+    let address;
+
+    app.use(bodyParser.json());
+    app.use(cors());
+
+    app.get('/api/info', async (req, res) => {
+        const web3 = new Web3(process.env.WEB3_PROVIDER);
+        const balanceWei = await web3.eth.getBalance(address);
+        const balance = Number(web3.utils.fromWei(balanceWei, 'ether')).toFixed(4);
+        
+        res.json({
+            success: true,
+            info: {
+                address,
+                balance
+            }
+        });
+    });
+
+    app.post('/api/ethsend', async (req, res) => {
+        res.status(201).json({
+            success: true,
+        });
+        if (readlineSync.keyInYN(`Send ${Web3Utils.fromWei(req.body.value, "ether")} to ${req.body.to} with gasPrice ${req.body.gasPrice}?`)) {
+            runWeb3(async (web3, address) => {
+                console.log('waiting for transaction to be sent...');
+                await new Promise(resolve => {
+                    web3.eth.sendTransaction({
+                        from: address,
+                        to: req.body.to,
+                        value: req.body.value,
+                        gasPrice: req.body.gasPrice
+                    })
+                    .on('transactionHash', hash => {
+                        console.log('sent, transaction hash:', hash);
+                        resolve();
+                    })
+                    .on('error', error => {
+                        console.error('transaction error', error);
+                        resolve();
+                    });
+                });
+                
+            });
+        } else {
+            console.log('rejected!');
+        }
+    });
+
+    console.log('Unlocking walllet...');
+    await runWeb3((web3, address_) => {
+        address = address_;
+    });
+    console.log('Wallet unlocked.');
+
+    app.listen(port, () => console.log(`ID Card Hardware Wallet signer listening on port ${port}!`))
 }
 
-cmdLoop();
+//cmdLoop();
+serverLoop();

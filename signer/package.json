@@ -1,7 +1,7 @@
 {
-  "name": "idcard-hardware-wallet-daemon",
+  "name": "idcard-hardware-wallet-signer",
   "version": "0.0.1",
-  "description": "IDCard hardware wallet daemon",
+  "description": "IDCard hardware wallet signer",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -9,7 +9,10 @@
   "author": "Miao ZhiCheng <miao@decentral.ee>",
   "license": "ISC",
   "dependencies": {
+    "body-parser": "^1.18.3",
+    "cors": "^2.8.5",
     "dotenv": "^7.0.0",
+    "express": "^4.16.4",
     "pkcs11js": "^1.0.17",
     "readline-sync": "^1.4.9",
     "truffle-privatekey-provider": "^1.1.0",

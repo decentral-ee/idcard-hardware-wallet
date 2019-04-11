@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>ID Card Hardware Wallet Demo</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <script charset="utf-8"
+      src="https://cdn.ethers.io/scripts/ethers-v4.min.js"
+      type="text/javascript">
+    </script>
+    <script
+      src="https://code.jquery.com/jquery-3.4.0.min.js"
+      integrity="sha256-BJeo0qm959uMBGb65z40ejJYGSgR7REI4+CW1fNKwOg="
+      crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <script src="jsQR.js"></script>
+  </head>
+  <body>
+    <!-- page content -->
+    <h1 class="text-center">ID Card Hardware Wallet Demo</h1>
+    <div class="container card d-none" id="div-main">
+        <div class="card-body">
+            <h2 class="card-title text-center">Ethereum Wallet</h2>
+            <div class="row">
+                <div class="col-6">
+                    <label class="card-text">Address:&nbsp;</label>
+                    <span class="card-text" id='text-address'></span>
+                    <br>
+                    
+                    <label class="card-text">Balance:&nbsp;</label>
+                    <span class="card-text" id='text-balance'></span>&nbsp;(ETH)
+                </div>
+                <div class="col-6">
+                    <img id='img-address-qr'></img>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-6">
+                    <label class="card-text">Recipient: </label>
+                    <input type="text" id="input-recipient" size="40">
+                    <button class="btn btn-secondary" onclick="startScan()">&#128247;</button>
+                    <br/>
+
+                    <label class="card-text">Amount (ETH): </label>
+                    <input type="number" id="input-ether-amount" size="8" value="0.005" step="0.001">
+                    <br/>
+
+                    <button class="btn btn-primary" onclick="sendEther()">Send Ether</button>
+                </div>
+                <div class="col-6">
+                    <canvas id="canvas"></canvas>
+                    <video id="video" class="d-none"></video>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container" id="div-waiting">
+        <p class="text-warning">Waiting for the signer to be connected...</p>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
