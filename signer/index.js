@@ -19,12 +19,15 @@ async function runWeb3(fn) {
         //const module_info = pkcs11.C_GetInfo();
 
         // find PIN1 ID card slot
+        console.debug("Searching for ID card...");
         const slots = pkcs11.C_GetSlotList(true);
         let selectedSlot;
         slots.forEach(slot => {
             const tokenInfo = pkcs11.C_GetTokenInfo(slot);
+            console.debug("# Slot", slot.toString("hex"));
+            console.debug(tokenInfo);
             if (tokenInfo.manufacturerID.startsWith('AS Sertifitseerimiskeskus') && 
-                tokenInfo.label.startsWith('PIN1')) {
+                tokenInfo.label.indexOf('PIN1') >= 0) {
                 selectedSlot = slot;
             }
         });
